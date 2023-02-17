@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="re">
+
+<!--의사별 조회  -->
+<select id='doctor' resultType="app.reception.vo.MedicalReceiptVO">
+select to_char(m.time, 'day')today,to_char(m.time,'mm/dd')reserve_date_short, 
+to_char(m.time,'hh24:mm')reserve_time, to_char(m.time,'yyyy-mm-dd')time, to_char(m.time, 'yymmddhh24mm') reserve_time_count,
+to_char(current_date, 'yymmddhh24mm') current_time,
+m.memo, p.name patient_name, s.name doctor_name,
+d.department_name department_name, d.location location
+from medical_receipt m inner join patient p
+on m.patient_id= p.patient_id
+inner join staff s
+on m.staff_id = s.staff_id
+inner join department d
+on s.department_id =d.department_id
+where s.name like #{doctor}
+order by reserve_time desc
+</select>
+
+<!--예약리스트 조회 -->
+<select id='appointment' resultType="app.reception.vo.MedicalReceiptVO" >
+select to_char(m.time, 'day')reserve_today,to_char(m.time,'mi/dd')reserve_date_short, 
+to_char(m.time,'hh24:mi')reserve_time, to_char(m.time,'yyyy-mm-dd')time, to_char(m.time, 'yymmddhh24mm') reserve_time_count,
+to_char(current_date, 'yymmddhh24mm') current_time,p.patient_id,
+m.memo, p.name patient_name, s.name doctor_name, s.staff_id,
+d.department_name department_name, d.location location
+from medical_receipt m inner join patient p
+on m.patient_id= p.patient_id
+inner join staff s
+on m.staff_id = s.staff_id
+inner join department d
+on s.department_id =d.department_id
+where to_char(m.time, 'yyyy-mm-dd') = #{time} 
+ <if test="!doctor_name.equals('교수명선택')">
+	 and s.name= #{doctor_name}
+ </if>
+order by reserve_time
+</select>
+
+<!--예약리스트 조회 -->
+<select id='appointment_name' resultType="app.reception.vo.MedicalReceiptVO" >
+select to_char(m.time, 'day')reserve_today,to_char(m.time,'mm/dd')reserve_date_short, 
+to_char(m.time,'hh24:mi')reserve_time, to_char(m.time,'yyyy-mm-dd')time, to_char(m.time, 'yymmddhh24mi') reserve_time_count,
+to_char(current_date, 'yymmddhh24mm') current_time,p.patient_id,
+m.memo, p.name patient_name, s.name doctor_name,
+d.department_name department_name, d.location location
+from medical_receipt m inner join patient p
+on m.patient_id= p.patient_id
+inner join staff s
+on m.staff_id = s.staff_id
+inner join department d
+on s.department_id =d.department_id
+where to_char(m.time, 'yyyy-mm-dd') = #{time} 
+order by reserve_time
+</select>
+
+
+
+
+<!--입원기록 조회  -->
+<select id='ward' resultType="app.reception.vo.WardVO" >
+select a.*, w.*,p.name patient_name, s.name doctor_name, d.department_name,
+to_char(a.admission_date, 'yyyy-mm-dd')admission_date, to_char(a.admission_date, 'hh24:mi') admission_time, 
+to_char(a.admission_date, 'dy') admission_day,
+to_char(a.discharge_date, 'yyyy-mm-dd')discharge_date, to_char(a.discharge_date, 'hh24:mi') discharge_time,
+to_char(a.discharge_date, 'dy') discharge_day
+from admission_record a left outer join ward w
+on a.ward_id = w.ward_id
+left outer join medical_record m
+on m.medical_record_id = a.medical_record_id
+left outer join patient p
+on p.patient_id = m.patient_id
+left outer join staff s
+on s.staff_id= m.staff_id
+left outer join department d
+on d.department_id =s.department_id
+where p.patient_id =#{id}
+order by  to_char(a.admission_date, 'yyyy-mm-dd') desc
+</select>
+
+ <!--처방기록 조회 -->
+ <select id='prescription' resultType="app.reception.vo.PrescriptionVO">
+select pr.*,m.*, p.name patient_name, s.name doctor_name,d.department_name department_name,
+to_char(m.treatment_date, 'yyyy-mm-dd')treate_date, to_char(m.treatment_date, 'hh24:mi')time, 
+to_char(m.treatment_date, 'dy')treate_day, m.memo memo
+from prescription_record pr left outer join medical_record m
+on pr.medical_record_id = m.medical_record_id
+left outer join patient p 
+on p.patient_id = m.patient_id
+left outer join staff s
+on s.staff_id = m.staff_id
+left outer join department d
+on d.department_id =s.department_id
+where p.patient_id = #{id}
+order by to_char(m.treatment_date, 'yyyy-mm-dd') desc
+ </select>
+ 
+
+<!--환자진료기록 조회 by id-->
+<select id='meidcal_record_id' resultType="app.reception.vo.MedicalRecordVO" >
+select p.patient_id, p.social_id, p.name patient, p.gender, p.phone_number, m.treatment_date,
+to_char(m.treatment_date, 'yyyy-mm-dd')record_date,to_char(m.treatment_date, 'hh24:mi')record_time ,
+to_char(m.treatment_date, 'dy')record_day, m.treatment_name, m.admission, m.memo memo,
+pr.prescription_name, s.name doctor, d.department_name,m.medical_record_id
+from patient p left outer join medical_record m
+on p.patient_id = m.patient_id
+left outer join prescription_record pr
+on m.medical_record_id = pr.medical_record_id
+left outer join staff s
+on s.staff_id = m.staff_id
+left outer join department d
+on s.department_id =d.department_id
+where p.patient_id =#{id}
+order by m.treatment_date desc
+</select>
+
+<!-- 상세진료기록 조회 by map-->
+<select id='medical_record' resultType="app.reception.vo.MedicalRecordVO" >
+select p.patient_id, p.social_id, p.name patient, p.gender, p.phone_number, m.treatment_date,
+to_char(m.treatment_date, 'yyyy-mm-dd')record_date,
+to_char(m.treatment_date, 'hh24:mi')record_time,
+to_char(current_date, 'yyyy-mm-dd')record_today,
+to_char(m.treatment_date, 'dy')record_day, m.treatment_name, m.admission,
+pr.prescription_name, s.name doctor, d.department_name, m.medical_record_id
+from patient p left outer join medical_record m
+on p.patient_id = m.patient_id
+left outer join prescription_record pr
+on m.medical_record_id = pr.medical_record_id
+left outer join staff s
+on s.staff_id = m.staff_id
+left outer join department d
+on s.department_id =d.department_id
+where p.patient_id =#{id}
+and to_char(m.treatment_date, 'yyyy-mm-dd') between #{from} and #{to}
+order by m.treatment_date desc
+</select>
+
+<!-- 진료과별 의사 예약 리스트 -->
+<select id ='get_appointment_list' resultType="app.reception.vo.MedicalReceiptVO">
+select to_char(m.time,'yyyy-mm-dd')reserve_date,to_char(m.time,'hh24:mi')reserve_time,to_char(m.time,'dy')reserve_day,
+m.memo,s.name doctor_name, p.name patient_name, d.department_name department_name, d.department_id department_id
+from medical_receipt m left outer join  staff s
+on m.staff_id=s.staff_id
+left outer join patient p
+on p.patient_id = m.patient_id
+left outer join department d
+on d.department_id = s.department_id
+where s.name= #{name}
+and to_char(m.time,'yyyy-mm-dd')='2023-01-20'
+order by reserve_time
+</select>
+
+<!-- 의사이름 선택 -->
+<select id='get_doctor_name' resultType="app.reception.vo.StaffVO" >
+select name from staff where department_id =#{id}
+order by name
+</select>
+<!-- 환자예약정보 조회 -->
+<select id ='patient_appointment'  resultType="app.reception.vo.MedicalReceiptVO" >
+select to_char(m.time, 'yyyy-mm-dd') reserve_date, to_char(m.time, 'hh24:mi') reserve_time, d.location location,
+m.memo, p.name patient_name , s.name doctor_name, d.department_name department_name, to_char(m.time,'dy') reserve_day
+from medical_receipt m inner join patient p
+on m.patient_id = p.patient_id
+inner join staff s
+on m.staff_id= s.staff_id
+inner join department d
+on s.department_id = d.department_id
+where p.patient_id = #{id}
+order by m.time desc
+</select>
+
+<!-- 환자인적사항 조회 by id-->
+<select id ='id' resultType="app.reception.vo.PatientVO">
+select * from patient
+where patient_id= #{id}
+</select>
+
+<!-- 환자인적사항 조회 by name-->
+<select id='patient' resultType="app.reception.vo.PatientVO">
+select * from patient 
+where name =#{name}
+</select>
+
+<!-- 로그인하기 -->
+<select id='login' resultType="app.staff.vo.StaffVO">
+select * from staff
+where staff_id=#{id} and pw = #{pw} 
+</select>
+
+
+	
+</mapper>
